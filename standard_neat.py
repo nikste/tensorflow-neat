@@ -5,13 +5,8 @@ import sys
 import numpy as np
 
 
-
-
-
-
 def add_connection(connections, genotype):
     enabled_innovations = [k for k in genotype.keys() if genotype[k]]
-
 
     enabled_connections = [connections[cns] for cns in enabled_innovations]
 
@@ -39,8 +34,6 @@ def add_connection(connections, genotype):
     if from_node == INPUT0 and to_node == INPUT1 or from_node == OUTPUT0 and to_node == OUTPUT1:
         return add_connection( connections, genotype)
 
-
-
     # check if connection already there
     if not any(from_node == c[1] and to_node == c[2] for c in connections):
         connections.append((len(connections), from_node, to_node))
@@ -50,6 +43,7 @@ def add_connection(connections, genotype):
     assert(len(genotype.keys()) <= len(connections))
     return connections, genotype
 
+
 def add_node(connections, genotype, debug=False):
     # select random connection that is enabled
     enabled_innovations = [k for k in genotype.keys() if genotype[k]]
@@ -58,7 +52,6 @@ def add_node(connections, genotype, debug=False):
     r = np.random.randint(0,len(enabled_innovations))
     connections_innovation_index = enabled_innovations[r]
     connection_to_split = connections[connections_innovation_index]
-
 
     from_node = connection_to_split[1]
     to_node = connection_to_split[2]
@@ -113,7 +106,6 @@ def crossover(connections, genotype0, performance0 , genotype1, performance1):
     # 1. matching genes are inherited at random (everything is made up and the weights don't matter here)
     # 2. disjoint and excess from the more fit parent
     # 3. preset chance to disable gene if its disabled in either parent
-
 
     # new genes should be always in the end
     k_0 = sorted(genotype0.keys())
@@ -189,10 +181,10 @@ def start_neuroevolution(x, y, x_test, y_test):
         fitnesses = []
         # test networks
         for i in xrange(0,len(genotypes)):
-            fitnesses.append(eval_fitness(connections, genotypes[i], x, y, x_test, y_test, run_id=str(its) + "_" + str(i)))
+            fitnesses.append(eval_fitness(connections, genotypes[i], x, y, x_test, y_test, run_id=str(its) + "/" + str(i)))
 
         # get indices of sorted list
-        fitnesses_sorted_indices = [i[0] for i in sorted(enumerate(fitnesses), key=lambda x: x[1])]
+        fitnesses_sorted_indices = [i[0] for i in reversed(sorted(enumerate(fitnesses), key=lambda x: x[1]))]
 
         print "connections:\n"
         print connections
@@ -200,33 +192,51 @@ def start_neuroevolution(x, y, x_test, y_test):
             print fitnesses[fitnesses_sorted_indices[ra]], genotypes[fitnesses_sorted_indices[ra]]
 
         # run evolutions
-        # todo: can be in lists
+        # todo: fiddle with parameters, include size of network in fitness?
         new_gen = []
-        for i in xrange(0,len(fitnesses)):
+        # copy five best survivors already
+        m = 5
+        if m > len(fitnesses):
+            m = len(fitnesses)
+
+        for i in xrange(0,m):
+            print "adding:", fitnesses[fitnesses_sorted_indices[i]], genotypes[fitnesses_sorted_indices[i]]
+            new_gen.append(genotypes[fitnesses_sorted_indices[i]])
+
+        for i in xrange(0,len(fitnesses_sorted_indices)):
+            fi = fitnesses_sorted_indices[i]
             r = np.random.uniform()
             # select the best for mutation and breeding, kill of worst.
-            if r <= fitnesses[i]:
+            if r <= 0.2:
                 # mutate
                 connections, gen = add_connection(connections, genotypes[i])
                 new_gen.append(gen)
             r = np.random.uniform()
-            if r <= fitnesses[i]:
+            if r <= 0.5:
                 connections, gen = add_node(connections, genotypes[i])
                 new_gen.append(gen)
 
-            # select random for breeding
-            r = np.random.randint(0,len(fitnesses))
-            r2 = np.random.randint(0,len(fitnesses) - 1)
-            if r2 >= r:
-                r2 +=1
-            gen = crossover(connections, genotypes[r], fitnesses[r], genotypes[r2], fitnesses[r2])
-            new_gen.append(gen)
+            r = np.random.uniform()
+            if r <= 0.1:
+                # select random for breeding
+                r = np.random.randint(0,len(fitnesses))
+                r2 = np.random.randint(0,len(fitnesses) - 1)
+                if r2 >= r:
+                    r2 +=1
+                gen = crossover(connections, genotypes[r], fitnesses[r], genotypes[r2], fitnesses[r2])
+                new_gen.append(gen)
+                new_gen.append(genotypes[fi])
+                # stop if we have 5 candidates
+            # new_gen.append(genotypes[fi])
+            if len(new_gen) > 10:
+                genotypes = new_gen
+                break
 
         # kill off all but 4 best
-        # todo: change
-        c = 0
-        for i in range(0,len(fitnesses_sorted_indices)):
-            new_gen.append(genotypes[fitnesses_sorted_indices[i]])
+        # # todo: change
+        # c = 0
+        # for i in range(0,len(fitnesses_sorted_indices)):
+        #     new_gen.append(genotypes[fitnesses_sorted_indices[i]])
 
         genotypes = new_gen
 
@@ -244,7 +254,7 @@ def test_crossover2():
     ## {0: True, 1: False, 2: True, 3: True, 6: True, 9: True}
 
 def test_crossover():
-    x, y = get_gaussian_quantiles(n_samples=1000)
+    x, y = get_gaussian_quantiles(n_samples=100)
     x_test, y_test = get_gaussian_quantiles(n_samples=100)
 
 

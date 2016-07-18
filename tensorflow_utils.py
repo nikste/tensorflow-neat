@@ -27,7 +27,7 @@ def add_node(inputs,name="stdname"):
             return output
 
 
-def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run_id="1"):
+def build_and_test(connections, genotype, x, y, x_test, y_test, run_id="1"):
 
     with tf.name_scope("input"):
         x0 = tf.placeholder(shape=[None,1], dtype=tf.float32, name="x0")
@@ -36,12 +36,6 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run
     with tf.name_scope("ground_truth"):
         y_ = tf.placeholder(shape=[None, 2], dtype=tf.float32, name="y_")
 
-
-
-    if debug:
-        print "original:"
-        print "connections:", connections
-        print "genotype:", genotype
     # connections contains only (innovation_num, from, to)
     # genotype contains only {innovation_num: True/False)
 
@@ -71,10 +65,6 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run
         else:
             connections_merged.append([connections_sorted[i][2],[connections_sorted[i][1]]])
 
-    if debug:
-        print "after:"
-        print connections_merged
-
     tf_nodes_dict = {INPUT0: x0, INPUT1: x1}
     for cn in connections_merged:
         node_cons = cn[1]
@@ -83,22 +73,17 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run
         node_name = str(node_id) + "_"
         for na in node_cons:
             node_name += "_" + str(na)
-        if debug:
-            print "creating node:", cn[0], "with connections",cn[1]
         tf_nodes_dict[cn[0]] = add_node(tf_input_nodes, name=node_name)
 
-
-
+    num_nodes = tf.constant(len(tf_nodes_dict.keys()))
+    tf.scalar_summary("num_nodes", num_nodes)
 
     with tf.name_scope("softmax_output"):
         # requery output nodes to add to optimization
         output_0 = tf_nodes_dict[OUTPUT0]
         output_1 = tf_nodes_dict[OUTPUT1]
 
-
-
         output_final_pre = tf.transpose(tf.squeeze(tf.pack([output_0,output_1])))
-
 
         W_o1 = tf.Variable(tf.truncated_normal([2, 2], stddev=1. / math.sqrt(2)))
         b_o1 = tf.Variable(tf.zeros([2]))
@@ -118,7 +103,6 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run
         # accuracy = tf.reduce_mean(tf.abs(output_final - y_))
         tf.scalar_summary("accuracy", accuracy)
 
-
     init = tf.initialize_all_variables()
     sess = tf.Session()
 
@@ -130,17 +114,14 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, debug=False, run
     sess.run(init)
 
     for i in xrange(1000):
-        # r = np.random.permutation(len(x))
-        # x = x[r]
-        # y = y[r]
         _, loss_val, summary = sess.run([opt, loss, merged], feed_dict={x0: np.expand_dims(x[:, 0], 1),x1: np.expand_dims(x[:, 1], 1), y_: y})
-        train_writer.add_summary(summary, i)
+        if i % 100 == 0:
+            train_writer.add_summary(summary, i)
 
-    acc_train = sess.run([accuracy], feed_dict={x0: np.expand_dims(x[:, 0], 1), x1: np.expand_dims(x[:, 1], 1), y_: y})
-    # acc_test = sess.run([accuracy], feed_dict={x0: np.expand_dims(x_test[:, 0], 1), x1: np.expand_dims(x_test[:, 1], 1), y_: y_test})
+    acc_test = sess.run([accuracy], feed_dict={x0: np.expand_dims(x_test[:, 0], 1), x1: np.expand_dims(x_test[:, 1], 1), y_: y_test})
     sess.close()
     tf.reset_default_graph()
-    return acc_train[0]
+    return acc_test[0]
 
 
 

@@ -33,7 +33,7 @@ import numpy as np
 
 # x_test = x.copy()
 # y_test = y.copy()
-x, y = get_gaussian_quantiles(n_samples=1000)
+x, y = get_gaussian_quantiles(n_samples=100)
 x_test, y_test = get_gaussian_quantiles(n_samples=100)
 
 
