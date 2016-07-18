@@ -1,7 +1,5 @@
 from Constants import OUTPUT0, OUTPUT1, INPUT1, INPUT0
-from data_fetcher import get_gaussian_quantiles
 from tensorflow_utils import build_and_test
-import sys
 import numpy as np
 
 
@@ -91,7 +89,6 @@ def add_node(connections, genotype, debug=False):
         genotype[ind[0]] = True
 
     # add new node
-
     # disable old connection where we now inserted a new node
     genotype[connections_innovation_index] = False
 
@@ -122,12 +119,6 @@ def crossover(connections, genotype0, performance0 , genotype1, performance1):
             elif innovation_num in k_1:
                 offspring_genotype[innovation_num] = genotype1[innovation_num]
 
-                # if one of them is disabled, disable (maybe in child)
-        # for k in k_1:
-        #     if genotype0[k] == False or genotype1[k] == False:
-        #         r = np.random.randint(0,2)
-        #         if r == 1:
-        #                 offspring_genotype[k] = False
     elif performance1 > performance0 and len(k_1) > len(k_0):
         for l in connections:
             innovation_num = l[0]
@@ -135,38 +126,20 @@ def crossover(connections, genotype0, performance0 , genotype1, performance1):
                 offspring_genotype[innovation_num] = genotype1[innovation_num]
             elif innovation_num in k_0:
                 offspring_genotype[innovation_num] = genotype0[innovation_num]
-        # for k in k_0:
-            # if genotype0[k] == False or genotype1[k] == False:
-            #     r = np.random.randint(0, 2)
-            #     if r == 1:
-            #         offspring_genotype[k] = False
 
     elif len(k_1) < len(k_0):
         for k in k_1:
             offspring_genotype[k] = genotype1[k]
-            # if genotype0[k] == False or genotype1[k] == False:
-            #     r = np.random.randint(0, 2)
-            #     if r == 1:
-            #         offspring_genotype[k] = False
+
     elif len(k_0) <= len(k_1):
         for k in k_0:
             offspring_genotype[k] = genotype0[k]
-            # if genotype0[k] == False or genotype1[k] == False:
-            #     r = np.random.randint(0, 2)
-            #     if r == 1:
-            #         offspring_genotype[k] = False
 
     return offspring_genotype
-    # add sorted keys anyway
-    # check disjoint and add if the one that has them is stronger
-    #
-    # performance0, performance1
 
 
 def eval_fitness(connections, genotype, x, y, x_test, y_test, run_id="1"):
-    # todo: only tests train
     perf_train = build_and_test(connections, genotype, x, y, x_test, y_test, run_id=run_id)
-    # print perf_test,perf_train
     return perf_train
 
 def start_neuroevolution(x, y, x_test, y_test):
@@ -227,99 +200,15 @@ def start_neuroevolution(x, y, x_test, y_test):
                 new_gen.append(gen)
                 new_gen.append(genotypes[fi])
                 # stop if we have 5 candidates
-            # new_gen.append(genotypes[fi])
             if len(new_gen) > 10:
-                genotypes = new_gen
                 break
-
-        # kill off all but 4 best
-        # # todo: change
-        # c = 0
-        # for i in range(0,len(fitnesses_sorted_indices)):
-        #     new_gen.append(genotypes[fitnesses_sorted_indices[i]])
-
         genotypes = new_gen
 
 
 
 
-def test_crossover2():
-    c = [(0, 0, 10000), (1, 1, 10000), (2, 0, 10001), (3, 1, 10001), (4, 0, 5000), (5, 5000, 10001), (6, 5000, 10000), (7, 5000, 7500), (8, 7500, 10001), (9, 1, 5000)]
-    g0 = {0: True, 1: False, 2: True, 3: True, 6: True, 9: True}
-    p0 = 0.381314
-    g1 = {0: True, 1: True, 2: True, 3: True}
-    p1 = 0.371789
-
-    offspring = crossover(c,g0,p0,g1,p1)
-    ## {0: True, 1: False, 2: True, 3: True, 6: True, 9: True}
-
-def test_crossover():
-    x, y = get_gaussian_quantiles(n_samples=100)
-    x_test, y_test = get_gaussian_quantiles(n_samples=100)
 
 
-    connections = [(0, INPUT0, OUTPUT0), (1, INPUT1, OUTPUT0), (2, INPUT0, OUTPUT1), (3, INPUT1, OUTPUT1)]
-
-    # genotype0 = {0: True, 1: True, 2: True, 3: True}
-    # genotype1 = {0: True, 1: True, 2: True, 3: True}
-    genotype0 = {0: True, 1: True, 2: True, 3: True}
-    genotype1 = {0: True, 1: True, 2: True, 3: True}
-    connections, genotype0 = add_node(connections, genotype0)
-
-    perf0 = 0.6
-    perf1 = 0.5
-    print connections
-    print genotype0
-    print perf0
-    print genotype1
-    print perf1
-    offspringgenotype = crossover(genotype0, perf0, genotype1, perf1)
-    print offspringgenotype
-
-
-
-
-
-if __name__ == "__main__":
-    #test_crossover2()
-    # test_crossover()
-
-    x, y = get_gaussian_quantiles(n_samples=1000)
-    x_test, y_test = get_gaussian_quantiles(n_samples=100)
-
-
-    connections = [(0, INPUT0, OUTPUT0), (1, INPUT1, OUTPUT0), (2, INPUT0, OUTPUT1), (3, INPUT1, OUTPUT1)]
-
-    genotype0 = {0:True, 1:True, 2:True, 3:True}
-    genotype1 = {0:True, 1:True, 2:True, 3:True}
-    # genotype1 = {}
-    for i in xrange(0,5000):
-
-        print "adding_node: gen0:",genotype0
-        connections, genotype0 = add_node(connections, genotype0)
-        print "after: gen0",genotype0
-
-
-        print "genotype0"
-        perf1 = eval_fitness(connections, genotype0, x, y, x_test, y_test, iteration=i)
-
-        i += 1
-        print "genotype1"
-        perf0 = eval_fitness(connections, genotype1, x, y, x_test, y_test, iteration=i)
-        print "adding_connection: gen1",genotype1
-        connections, genotype1 = add_connection(connections, genotype1)
-        print "after: gen1",genotype1
-
-        print "connections:",connections
-        print "crossover:"
-        print "gen0, perf0", genotype0, perf0
-        print "gen1, perf1", genotype1, perf1
-        genotype0 = crossover(connections, genotype0,perf0,genotype1,perf1)
-        print "after:",genotype0
-
-    #
-    # perf = eval_fitness(connections, genotype, x, y, x_test, y_test)
-    # print "performance:", perf
 
 
 

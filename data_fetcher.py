@@ -17,7 +17,6 @@ def get_gaussian_quantiles(n_samples=1000):
 
     x = x.astype(np.float32)
     y = y.astype(np.float32)
-    # Y1 = np.sign(Y1 - 0.5)
     return x,y
 
 def generate_xor(n_samples=1000):
