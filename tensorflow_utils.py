@@ -11,13 +11,13 @@ def add_node(inputs,name="stdname"):
         b = tf.Variable(tf.zeros([1]))
 
         if len(inputs) > 1:
-            in_tensor = tf.transpose(tf.squeeze(tf.pack(inputs)))
+            in_tensor = tf.transpose(tf.squeeze(tf.stack(inputs)))
             output = tf.nn.relu(tf.matmul(in_tensor, w) + b, name=name)
             return output
 
         else:
-            in_tensor = tf.squeeze(tf.pack(inputs))
-            output = tf.transpose(tf.nn.relu(tf.mul(in_tensor, w) + b, name=name))
+            in_tensor = tf.squeeze(tf.stack(inputs))
+            output = tf.transpose(tf.nn.relu(tf.multiply(in_tensor, w) + b, name=name))
             return output
 
 
@@ -69,23 +69,23 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, run_id="1"):
         tf_nodes_dict[cn[0]] = add_node(tf_input_nodes, name=node_name)
 
     num_nodes = tf.constant(len(tf_nodes_dict.keys()))
-    tf.scalar_summary("num_nodes", num_nodes)
+    tf.summary.scalar("num_nodes", num_nodes)
 
     with tf.name_scope("softmax_output"):
         # requery output nodes to add to optimization
         output_0 = tf_nodes_dict[OUTPUT0]
         output_1 = tf_nodes_dict[OUTPUT1]
 
-        output_final_pre = tf.transpose(tf.squeeze(tf.pack([output_0,output_1])))
+        output_final_pre = tf.transpose(tf.squeeze(tf.stack([output_0,output_1])))
 
         W_o1 = tf.Variable(tf.truncated_normal([2, 2], stddev=1. / math.sqrt(2)))
         b_o1 = tf.Variable(tf.zeros([2]))
         output_final = tf.nn.softmax(tf.matmul(output_final_pre,W_o1) + b_o1, name="output_softmax")
 
     with tf.name_scope("loss"):
-        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(output_final, y_)
+        cross_entropy = tf.nn.softmax_cross_entropy_with_logits(logits = output_final, labels = y_)
         loss = tf.reduce_mean(cross_entropy)
-        tf.scalar_summary("loss",loss)
+        tf.summary.scalar("loss",loss)
 
     with tf.name_scope("optimizer"):
         opt = tf.train.GradientDescentOptimizer(0.5).minimize(loss)
@@ -94,14 +94,14 @@ def build_and_test(connections, genotype, x, y, x_test, y_test, run_id="1"):
         correct_prediction = tf.equal(tf.argmax(output_final, 1), tf.argmax(y_, 1))
         accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
         # accuracy = tf.reduce_mean(tf.abs(output_final - y_))
-        tf.scalar_summary("accuracy", accuracy)
+        tf.summary.scalar("accuracy", accuracy)
 
-    init = tf.initialize_all_variables()
+    init = tf.global_variables_initializer()
     sess = tf.Session()
 
-    tf.merge_all_summaries()
-    merged = tf.merge_all_summaries()
-    train_writer = tf.train.SummaryWriter('./train/' + run_id,
+    tf.summary.merge_all()
+    merged = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter('./train/' + run_id,
                                           sess.graph)
 
     sess.run(init)

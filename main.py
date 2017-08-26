@@ -7,8 +7,8 @@ from standard_neat import start_neuroevolution
 # X_test, y_test = generate_xor(n_samples=10)
 
 
-x, y = get_gaussian_quantiles(n_samples=100)
-x_test, y_test = get_gaussian_quantiles(n_samples=100)
+x, y = generate_xor(n_samples=100)
+x_test, y_test = generate_xor(n_samples=100)
 
 
 print x.shape

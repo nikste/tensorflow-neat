@@ -148,7 +148,7 @@ def start_neuroevolution(x, y, x_test, y_test):
     connections = [(0, INPUT0, OUTPUT0), (1, INPUT1, OUTPUT0), (2, INPUT0, OUTPUT1), (3, INPUT1, OUTPUT1)]
     genotypes = [{0: True, 1: True, 2: True, 3: True} for d in xrange(5)]
 
-    for its in xrange(0,100):
+    for its in xrange(0,5):
         print "iteration", its
 
         fitnesses = []
@@ -203,12 +203,3 @@ def start_neuroevolution(x, y, x_test, y_test):
             if len(new_gen) > 10:
                 break
         genotypes = new_gen
-
-
-
-
-
-
-
-
-
